@@ -1,8 +1,11 @@
 package invertIndex
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
-func MakeIndexMap(Map map[string]map[string]int, name string, content []string) {
+func MakeIndexMap(Map map[string]map[string]int, name string, content []string, wg *sync.WaitGroup) {
 	sliceWordFile := content
 	for i := 0; i < len(sliceWordFile); i++ {
 		word := sliceWordFile[i]
@@ -18,7 +21,7 @@ func MakeIndexMap(Map map[string]map[string]int, name string, content []string) 
 			}
 		}
 	}
-
+	wg.Done()
 }
 
 func SearchPhrase(Map map[string]map[string]int, slicePhrase []string, sliceNameFile []string) map[string]int {
@@ -52,35 +55,28 @@ type result struct {
 	count int
 }
 
-func SortResult(Map map[string]int) map[string]int {
+func SortResult(Map map[string]int) {
 	var sorting []result
-	for i := 0; i < len(Map); i++ {
-		for name, count := range Map {
-			var pushElement result
-			pushElement.name = name
-			pushElement.count = count
-			sorting = append(sorting, pushElement)
+
+	for name, count := range Map {
+		var pushElement result
+		pushElement.name = name
+		pushElement.count = count
+		sorting = append(sorting, pushElement)
+	}
+
+	for j := len(sorting) - 1; j > 0; j-- {
+		for i := 0; i < j; i++ {
+			if sorting[i+1].count > sorting[i].count {
+				tempElement := sorting[i]
+				sorting[i] = sorting[i+1]
+				sorting[i+1] = tempElement
+			}
 		}
 	}
 
-	for i := 0; i < len(Map)-1; i++ {
-		if sorting[i+1].count > sorting[i].count {
-			tempElement := sorting[i]
-			sorting[i] = sorting[i+1]
-			sorting[i+1] = tempElement
-		}
-	}
+	for i := 0; i < len(sorting); i++ {
+		fmt.Println("- ", sorting[i].name, " совпадений - ", sorting[i].count)
 
-	resultMap := make(map[string]int)
-	for j := 0; j < len(Map); j++ {
-		resultMap[sorting[j].name] = sorting[j].count
-	}
-
-	return resultMap
-}
-
-func PrintResult(resultMap map[string]int) {
-	for name, count := range resultMap {
-		fmt.Println("- ", name, " совпадений - ", count)
 	}
 }
