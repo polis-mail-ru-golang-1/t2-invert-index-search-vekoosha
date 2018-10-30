@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-
+        "sync"
 	"github.com/polis-mail-ru-golang-1/t2-invert-index-search-vekoosha/invertIndex"
 )
 
@@ -15,18 +15,18 @@ func main() {
 	namesFiles := os.Args[1:]
 
 	elements := make(map[string]map[string]int)
-
+	var wg sync.WaitGroup
+	wg.Add(len(namesFiles))
 	for i := 0; i < len(namesFiles); i++ {
-		invertIndex.MakeIndexMap(elements, namesFiles[i], contentFile(namesFiles[i]))
+		go invertIndex.MakeIndexMap(elements, namesFiles[i], contentFile(namesFiles[i]), &wg)
 	}
+	wg.Wait()
 
 	var slicePhrase []string
 	slicePhrase = readPhrase(slicePhrase)
-
 	resultMap := make(map[string]int)
 	resultMap = invertIndex.SearchPhrase(elements, slicePhrase, namesFiles)
-	resultMap = invertIndex.SortResult(resultMap)
-	invertIndex.PrintResult(resultMap)
+	invertIndex.SortResult(resultMap)
 }
 
 func readPhrase(slicePhrase []string) []string {
